@@ -1,14 +1,12 @@
 const Product = require('../models/productModel');
 const ErrorHandler = require('../utils/errorHandler');
 const catchAsyncErrors = require('../middleware/asyncError');
-const ApiFeatures = require('../utils/apiFeatures');
+const QueryHandler = require('../utils/queryHandler');
 
 // get all products
 exports.getAllProducts = catchAsyncErrors( async(req, res, next)=> {
-    // res.status(200).json({message: "route is working"})
-    const resultPerPage = 5;
-    const apiFeatures = new ApiFeatures(Product.find(), req.query).search().filter().pagination(resultPerPage);
-    const products = await apiFeatures.query;
+    const querySet = new QueryHandler(Product.find(), req.query).resolve();
+    const products = await querySet.query;
     const productCount = await Product.countDocuments(); 
 
     res.status(200).json({
@@ -37,10 +35,6 @@ exports.getProductDetails = catchAsyncErrors( async(req, res, next)=> {
     const product = await Product.findById(productId);
 
     if(!product) {
-        // res.status(500).json({
-        //     success: false,
-        //     message: 'product not found'
-        // })
         return next(new ErrorHandler('product not found', 404));
     }
 
@@ -85,7 +79,7 @@ exports.deleteProduct = catchAsyncErrors( async(req, res, next)=> {
         return next(new ErrorHandler('product not found', 404))
     }
 
-    await product.deleteOne({_id :productId})
+    await product.deleteOne({_id: productId})
 
     res.status(200).json({
         success: true,

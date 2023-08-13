@@ -3,7 +3,6 @@ const User = require("../models/userModel");
 const ErrorHandler = require("../utils/errorHandler");
 const sendToken = require("../utils/jwtToken");
 const sendEmail = require("../utils/sendEmail");
-const crypto = require("crypto")
 
 // register user
 exports.registerUser = catchAsyncError(async (req, res, next) => {
@@ -25,21 +24,21 @@ exports.registerUser = catchAsyncError(async (req, res, next) => {
 // login user;
 exports.loginUser = catchAsyncError(async (req, res, next) => {
   const { email, password } = req.body;
-
+ 
   if (!email || !password) {
-    return next(new ErrorHandler("invalid email or password", 400));
+    return next(new ErrorHandler("Email or password missing", 400));
   }
 
   const user = await User.findOne({ email }).select("+password");
 
   if (!user) {
-    return next(new ErrorHandler("user not found", 404));
+    return next(new ErrorHandler("Invalid email or password", 400));
   }
 
-  const isPasswordMatch = user.comparePassword(password);
+  const isPasswordMatch = await user.comparePassword(password);
 
   if (!isPasswordMatch) {
-    return next(new ErrorHandler("wrong password entered", 400));
+    return next(new ErrorHandler("Invalid email or password", 400));
   }
 
   sendToken(user, 200, res);
@@ -54,7 +53,7 @@ exports.logoutUser = catchAsyncError(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    message: "Logged Out successfully",
+    message: "Logged out successfully",
   });
 });
 
@@ -68,15 +67,12 @@ exports.forgotPassword = catchAsyncError(async (req, res, next) => {
 
   let resetToken = user.getResetPasswordToken();
  
-//   console.log("resetToken1", resetToken);
 
   await user.save({ validationBeforeSave: false });
 
-  const passwordResetUrl = `${req.protocol}://${req.get(
-    "host"
-  )}/api/v1/user/password/reset/${resetToken}`;
+  const passwordResetUrl = `${req.body.redirectURL}${resetToken}`;
 
-  const message = `Below is your requested password url \n\n ${passwordResetUrl} \n \nIf you are not requested the url, Please ignore this message`;
+  const message = `Below is your requested password url \n\n ${passwordResetUrl} \n \nIf you did not request the url, Please ignore this message`;
 
   try {
     sendEmail({
@@ -87,7 +83,7 @@ exports.forgotPassword = catchAsyncError(async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: `Reset password email send to ${user.email} successfully!`,
+      message: `Reset password email sent to ${user.email} successfully!`,
     });
   } catch (err) {
     user.resetPasswordToken = undefined;
@@ -102,27 +98,22 @@ exports.forgotPassword = catchAsyncError(async (req, res, next) => {
 // resetpassword;
 exports.resetPassword = catchAsyncError(async(req, res, next)=> {
     const token = req.params.token;
-    console.log("req.params.token;", token)
-    
     
     
     const user = await User.findOne({
         resetPasswordToken: token,
-        // resetPasswordExpire:{$gt: Date.now()}
-        // resetPasswordExpire: {$gt: Date.now()},
+        resetPasswordExpire:{$gt: Date.now()}
     })
 
     if(!user){
         return next(new ErrorHandler("reset password token is invalid or has been expired", 400))
     }
 
-    console.log("user", user)
     if(req.body.password !== req.body.confirmPassword) {
         return next(new ErrorHandler("Password and confirm password are not matching!"))
     }
 
-    let oldPass = user.password;
-    oldPass = req.body.password;
+    user.password = req.body.password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
 

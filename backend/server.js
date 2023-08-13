@@ -18,8 +18,8 @@ const connectDatabase = require('./config/database');
 connectDatabase();
 
 
-const server = app.listen(process.env.PORT, ()=> {
-    console.log(`server is running on localhost:${process.env.PORT}`)
+const server = app.listen(process.env.PORT || 5000, process.env.HOST || "localhost", ()=> {
+    console.log(`server is running on ${process.env.HOST || "localhost"}:${process.env.PORT || 5000}`)
 })
 
 // unhandled promise rejection error // server error;
