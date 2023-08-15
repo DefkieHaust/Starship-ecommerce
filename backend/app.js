@@ -11,7 +11,8 @@ app.use(cookieParser())
 //main route;
 app.use('/api/v1', require('./routes/productRoute'));
 app.use('/api/v1', require('./routes/userRoute'));
-
+app.use('/api/v1', require('./routes/addressRoute'))
+app.use('/api/v1', require('./routes/orderRoute'))
 
 //use middlewares here;
 app.use(errorMiddleware)

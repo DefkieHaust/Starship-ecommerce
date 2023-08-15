@@ -1,11 +1,12 @@
-const catchAsyncError = require("../middleware/asyncError");
+const catchAsyncErrors = require("../middleware/asyncError");
 const User = require("../models/userModel");
 const ErrorHandler = require("../utils/errorHandler");
 const sendToken = require("../utils/jwtToken");
 const sendEmail = require("../utils/sendEmail");
+const QueryHandler = require("../utils/queryHandler");
 
 // register user
-exports.registerUser = catchAsyncError(async (req, res, next) => {
+exports.registerUser = catchAsyncErrors(async (req, res, next) => {
   const { name, email, password } = req.body;
 
   const user = await User.create({
@@ -18,11 +19,11 @@ exports.registerUser = catchAsyncError(async (req, res, next) => {
     },
   });
 
-  sendToken(user, 201, res);
+  sendToken(user, 201, res, "Created account successfully");
 });
 
 // login user;
-exports.loginUser = catchAsyncError(async (req, res, next) => {
+exports.loginUser = catchAsyncErrors(async (req, res, next) => {
   const { email, password } = req.body;
  
   if (!email || !password) {
@@ -41,11 +42,11 @@ exports.loginUser = catchAsyncError(async (req, res, next) => {
     return next(new ErrorHandler("Invalid email or password", 400));
   }
 
-  sendToken(user, 200, res);
+  sendToken(user, 200, res, "Logged in successfully");
 });
 
 // logout functionalty
-exports.logoutUser = catchAsyncError(async (req, res, next) => {
+exports.logoutUser = catchAsyncErrors(async (req, res, next) => {
   res.cookie("token", null, {
     expires: new Date(Date.now()),
     httpOnly: true,
@@ -58,7 +59,7 @@ exports.logoutUser = catchAsyncError(async (req, res, next) => {
 });
 
 // forgotPassword;
-exports.forgotPassword = catchAsyncError(async (req, res, next) => {
+exports.forgotPassword = catchAsyncErrors(async (req, res, next) => {
   const user = await User.findOne({ email: req.body.email });
 
   if (!user) {
@@ -96,7 +97,7 @@ exports.forgotPassword = catchAsyncError(async (req, res, next) => {
 
 
 // resetpassword;
-exports.resetPassword = catchAsyncError(async(req, res, next)=> {
+exports.resetPassword = catchAsyncErrors(async(req, res, next)=> {
     const token = req.params.token;
     
     
@@ -110,7 +111,7 @@ exports.resetPassword = catchAsyncError(async(req, res, next)=> {
     }
 
     if(req.body.password !== req.body.confirmPassword) {
-        return next(new ErrorHandler("Password and confirm password are not matching!"))
+        return next(new ErrorHandler("Password and confirm password are not matching!", 400))
     }
 
     user.password = req.body.password;
@@ -119,6 +120,133 @@ exports.resetPassword = catchAsyncError(async(req, res, next)=> {
 
     await user.save();
 
-    sendToken(user, 201, res)
+    sendToken(user, 201, res, "Password reset successfully")
 
 })
+
+exports.getUserDetails = catchAsyncErrors(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+
+  res.status(200).json({
+    success: true,
+    user,
+  });
+});
+
+// update password
+exports.updatePassword = catchAsyncErrors(async (req, res, next) => {
+  const user = await User.findById(req.user.id).select("+password");
+
+  const passwordMatched = await user.comparePassword(req.body.password);
+
+  if (!passwordMatched) {
+    return next(new ErrorHandler("Old password is incorrect", 400));
+  }
+
+  if (req.body.newPassword !== req.body.confirmPassword) {
+    return next(new ErrorHandler("password does not match", 400));
+  }
+
+  user.password = req.body.newPassword;
+
+  await user.save();
+
+  sendToken(user, 200, res, "Password updated successfully");
+});
+
+// update User Profile
+exports.updateProfile = catchAsyncErrors(async (req, res, next) => {
+  const newUserData = {
+    name: req.body.name,
+    email: req.body.email,
+  };
+
+  // cloud strorage
+
+  const user = await User.findByIdAndUpdate(req.user.id, newUserData, {
+    new: true,
+    runValidators: true,
+    useFindAndModify: false
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "User updated successfully",
+    user
+  });
+});
+
+// Get single user (admin)
+exports.getSingleUser = catchAsyncErrors(async (req, res, next) => {
+  const user = await User.findById(req.params.id);
+
+  if (!user) {
+    return next(
+      new ErrorHandler(`User does not exist with Id: ${req.params.id}`)
+    );
+  }
+
+  res.status(200).json({
+    success: true,
+    user,
+  });
+});
+
+// Get all users(admin)
+exports.getAllUser = catchAsyncErrors(async (req, res, next) => {
+    const querySet = new QueryHandler(User.find(), req.query).resolve();
+    const users = await querySet.query;
+    const userCount = await User.countDocuments();
+
+  res.status(200).json({
+    success: true,
+    users,
+    userCount
+  });
+});
+
+// update User Profile (admin)
+exports.updateUser = catchAsyncErrors(async (req, res, next) => {
+  const newUserData = {
+    name: req.body.name,
+    email: req.body.email,
+    role: req.body.role,
+  };
+
+  // cloud strorage
+
+  const user = await User.findByIdAndUpdate(req.params.id, newUserData, {
+    new: true,
+    runValidators: true,
+    useFindAndModify: false
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "User updated successfully",
+    user
+  });
+});
+
+// Delete User --Admin
+exports.deleteUser = catchAsyncErrors(async (req, res, next) => {
+  const userId = req.params.id;
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    return next(
+      new ErrorHandler(`User does not exist with Id: ${req.params.id}`, 400)
+    );
+  }
+
+  // cloud strorage
+
+  await user.deleteOne()
+
+  res.status(200).json({
+    success: true,
+    message: "User deleted successfully",
+    user
+  });
+});

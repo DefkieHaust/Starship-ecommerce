@@ -1,14 +1,14 @@
 class QueryHandler {
-  constructor(query, queryStr) {
+  constructor(query, queryOpts) {
     this.query = query;
-    this.queryStr = queryStr;
+    this.queryOpts = queryOpts;
   }
   //   search functionalty
   search() {
-    const keyword = this.queryStr.keyword
+    const keyword = this.queryOpts.keyword
       ? {
           name: {
-            $regex: this.queryStr.keyword,
+            $regex: this.queryOpts.keyword,
             $options: "i",
           },
         }
@@ -20,13 +20,13 @@ class QueryHandler {
 
   //   filter functionalty
   filter() {
-    const queryCopy = { ...this.queryStr };
+    const queryCopy = { ...this.queryOpts };
     const removeFields = ["page", "keyword", "limit"];
 
     removeFields.forEach((key) => {
       delete queryCopy[key];
     });
-    // filter for price and rating;
+    
     let queryString = JSON.stringify(queryCopy);
     queryString = queryString.replace(
       /\b(gt|gte|lt|lte)\b/g,
@@ -39,10 +39,10 @@ class QueryHandler {
 
   //   pagination;
   pagination() {
-    const currentPage = Number(this.queryStr.page) || 1;
-    const skip = (currentPage - 1) * this.queryStr.limit;
+    const currentPage = Number(this.queryOpts.page) || 1;
+    const skip = (currentPage - 1) * this.queryOpts.limit;
 
-    this.query = this.query.limit(this.queryStr.limit).skip(skip);
+    this.query = this.query.limit(this.queryOpts.limit).skip(skip);
 
     return this;
   }
