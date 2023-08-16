@@ -137,61 +137,61 @@ exports.createProductReview = catchAsyncErrors(async (req, res, next) => {
 
 // Get All Reviews of a product
 exports.getProductReviews = catchAsyncErrors(async (req, res, next) => {
-  const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id);
 
-  if (!product) {
-    return next(new ErrorHandler("Product not found", 404));
-  }
+    if (!product) {
+        return next(new ErrorHandler("Product not found", 404));
+    }
 
-  const query = new QueryHandler(Review.find({ product: product._id }), req.query);
-  const querySet = query.resolve()
-  const reviews = await querySet.query;
+    const query = new QueryHandler(Review.find({ product: product._id }), req.query);
+    const querySet = query.resolve()
+    const reviews = await querySet.query;
 
-  res.status(200).json({
-    success: true,
-    reviews,
-    numOfReviews: product.numOfReviews
-  });
+    res.status(200).json({
+        success: true,
+        reviews,
+        numOfReviews: product.numOfReviews
+    });
 });
 
 // Delete Review
 exports.deleteReview = catchAsyncErrors(async (req, res, next) => {
-  const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id);
 
-  if (!product) {
-    return next(new ErrorHandler("Product not found", 404));
-  }
+    if (!product) {
+        return next(new ErrorHandler("Product not found", 404));
+    }
 
-  const review = await Review.findOne({ user: req.user._id, product: product._id });
+    const review = await Review.findOne({ user: req.user._id, product: product._id });
   
-  if (review) {
-    await review.deleteOne();
-  } else {
-    return next(new ErrorHandler("Review not found", 404));
-  }
+    if (review) {
+        await review.deleteOne();
+    } else {
+        return next(new ErrorHandler("Review not found", 404));
+    }
 
-  const reviews = await Review.find({ product: product._id });
+    const reviews = await Review.find({ product: product._id });
   
-  let avg = 0;
+    let avg = 0;
 
-  reviews.forEach((rev) => {
-    avg += rev.rating;
-  });
+    reviews.forEach((rev) => {
+        avg += rev.rating;
+    });
 
-  if (reviews.length === 0) {
-    product.rating = 0;
-  } else {
-    product.rating = avg / reviews.length;
-  }
+    if (reviews.length === 0) {
+        product.rating = 0;
+    } else {
+        product.rating = avg / reviews.length;
+    }
 
-  product.numOfReviews = reviews.length;
+    product.numOfReviews = reviews.length;
 
-  await product.save({ useFindAndModify: false });
+    await product.save({ useFindAndModify: false });
 
-  res.status(200).json({
-    success: true,
-    message: "Review deleted successfully",
-    reviews,
-    numOfReviews: product.numOfReviews
-  });
+    res.status(200).json({
+        success: true,
+        message: "Review deleted successfully",
+        reviews,
+        numOfReviews: product.numOfReviews
+    });
 });

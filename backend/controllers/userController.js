@@ -7,92 +7,116 @@ const QueryHandler = require("../utils/queryHandler");
 
 // register user
 exports.registerUser = catchAsyncErrors(async (req, res, next) => {
-  const { name, email, password } = req.body;
+    const { name, email, password } = req.body;
 
-  const user = await User.create({
-    name,
-    email,
-    password,
-    avatar: {
-      public_id: "this is avatar",
-      url: "this is avatar url",
-    },
-  });
+    const user = await User.create({
+        name,
+        email,
+        password,
+        avatar: {
+            public_id: "this is avatar",
+            url: "this is avatar url",
+        },
+    });
 
-  sendToken(user, 201, res, "Created account successfully");
+    sendToken(user, 201, res, "Created account successfully");
 });
 
 // login user;
 exports.loginUser = catchAsyncErrors(async (req, res, next) => {
-  const { email, password } = req.body;
+    const { email, password } = req.body;
  
-  if (!email || !password) {
-    return next(new ErrorHandler("Email or password missing", 400));
-  }
+    if (!email || !password) {
+        return next(new ErrorHandler("Email or password missing", 400));
+    }
 
-  const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email }).select("+password");
 
-  if (!user) {
-    return next(new ErrorHandler("Invalid email or password", 400));
-  }
+    if (!user) {
+        return next(new ErrorHandler("Invalid email or password", 400));
+    }
 
-  const isPasswordMatch = await user.comparePassword(password);
+    const isPasswordMatch = await user.comparePassword(password);
 
-  if (!isPasswordMatch) {
-    return next(new ErrorHandler("Invalid email or password", 400));
-  }
+    if (!isPasswordMatch) {
+        return next(new ErrorHandler("Invalid email or password", 400));
+    }
 
-  sendToken(user, 200, res, "Logged in successfully");
+    sendToken(user, 200, res, "Logged in successfully");
 });
 
 // logout functionalty
 exports.logoutUser = catchAsyncErrors(async (req, res, next) => {
-  res.cookie("token", null, {
-    expires: new Date(Date.now()),
-    httpOnly: true,
-  });
-
-  res.status(200).json({
-    success: true,
-    message: "Logged out successfully",
-  });
-});
-
-// forgotPassword;
-exports.forgotPassword = catchAsyncErrors(async (req, res, next) => {
-  const user = await User.findOne({ email: req.body.email });
-
-  if (!user) {
-    return next(new ErrorHandler("user not found", 404));
-  }
-
-  let resetToken = user.getResetPasswordToken();
- 
-
-  await user.save({ validationBeforeSave: false });
-
-  const passwordResetUrl = `${req.body.redirectURL}${resetToken}`;
-
-  const message = `Below is your requested password url \n\n ${passwordResetUrl} \n \nIf you did not request the url, Please ignore this message`;
-
-  try {
-    sendEmail({
-      email: user.email,
-      subject: `Password reset request`,
-      message,
+    res.cookie("token", null, {
+        expires: new Date(Date.now()),
+        httpOnly: true,
     });
 
     res.status(200).json({
-      success: true,
-      message: `Reset password email sent to ${user.email} successfully!`,
+        success: true,
+        message: "Logged out successfully",
     });
-  } catch (err) {
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
+});
+
+
+// delete account
+exports.deleteAccount = catchAsyncErrors(async (req, res, next) => {
+    const user = await User.findById(req.user.id).select("+password");
+
+    const passwordMatched = await user.comparePassword(req.body.password);
+
+    if (!passwordMatched) {
+        return next(new ErrorHandler("Invalid password", 400));
+    }
+
+    if (req.body.password !== req.body.confirmPassword) {
+        return next(new ErrorHandler("Password does not match", 400));
+    }
+
+    const account = await User.findByIdAndDelete(req.user.id);
+
+    res.status(200).json({
+        success: true,
+        message: "Account deleted successfully",
+        account,
+    })
+})
+
+// forgotPassword;
+exports.forgotPassword = catchAsyncErrors(async (req, res, next) => {
+    const user = await User.findOne({ email: req.body.email });
+
+    if (!user) {
+        return next(new ErrorHandler("user not found", 404));
+    }
+
+    let resetToken = user.getResetPasswordToken();
+ 
+
     await user.save({ validationBeforeSave: false });
 
-    return next(new ErrorHandler(err.message, 400));
-  }
+    const passwordResetUrl = `${req.body.redirectURL}${resetToken}`;
+
+    const message = `Below is your requested password url \n\n ${passwordResetUrl} \n \nIf you did not request the url, Please ignore this message`;
+
+    try {
+        sendEmail({
+            email: user.email,
+            subject: `Password reset request`,
+            message,
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `Reset password email sent to ${user.email} successfully!`,
+        });
+    } catch (err) {
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+        await user.save({ validationBeforeSave: false });
+
+        return next(new ErrorHandler(err.message, 400));
+    }
 });
 
 
@@ -125,71 +149,71 @@ exports.resetPassword = catchAsyncErrors(async(req, res, next)=> {
 })
 
 exports.getUserDetails = catchAsyncErrors(async (req, res, next) => {
-  const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id);
 
-  res.status(200).json({
-    success: true,
-    user,
-  });
+    res.status(200).json({
+        success: true,
+        user,
+    });
 });
 
 // update password
 exports.updatePassword = catchAsyncErrors(async (req, res, next) => {
-  const user = await User.findById(req.user.id).select("+password");
+    const user = await User.findById(req.user.id).select("+password");
 
-  const passwordMatched = await user.comparePassword(req.body.password);
+    const passwordMatched = await user.comparePassword(req.body.password);
 
-  if (!passwordMatched) {
-    return next(new ErrorHandler("Old password is incorrect", 400));
-  }
+    if (!passwordMatched) {
+        return next(new ErrorHandler("Old password is incorrect", 400));
+    }
 
-  if (req.body.newPassword !== req.body.confirmPassword) {
-    return next(new ErrorHandler("password does not match", 400));
-  }
+    if (req.body.newPassword !== req.body.confirmPassword) {
+        return next(new ErrorHandler("password does not match", 400));
+    }
 
-  user.password = req.body.newPassword;
+    user.password = req.body.newPassword;
 
-  await user.save();
+    await user.save();
 
-  sendToken(user, 200, res, "Password updated successfully");
+    sendToken(user, 200, res, "Password updated successfully");
 });
 
 // update User Profile
 exports.updateProfile = catchAsyncErrors(async (req, res, next) => {
-  const newUserData = {
-    name: req.body.name,
-    email: req.body.email,
-  };
+    const newUserData = {
+        name: req.body.name,
+        email: req.body.email,
+    };
 
-  // cloud strorage
+    // cloud strorage
 
-  const user = await User.findByIdAndUpdate(req.user.id, newUserData, {
-    new: true,
-    runValidators: true,
-    useFindAndModify: false
-  });
+    const user = await User.findByIdAndUpdate(req.user.id, newUserData, {
+        new: true,
+        runValidators: true,
+        useFindAndModify: false
+    });
 
-  res.status(200).json({
-    success: true,
-    message: "User updated successfully",
-    user
-  });
+    res.status(200).json({
+        success: true,
+        message: "User updated successfully",
+        user
+    });
 });
 
 // Get single user (admin)
 exports.getSingleUser = catchAsyncErrors(async (req, res, next) => {
-  const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id);
 
-  if (!user) {
-    return next(
-      new ErrorHandler(`User does not exist with Id: ${req.params.id}`)
-    );
-  }
+    if (!user) {
+        return next(
+            new ErrorHandler(`User does not exist with Id: ${req.params.id}`)
+        );
+    }
 
-  res.status(200).json({
-    success: true,
-    user,
-  });
+    res.status(200).json({
+        success: true,
+        user,
+    });
 });
 
 // Get all users(admin)
@@ -198,55 +222,55 @@ exports.getAllUser = catchAsyncErrors(async (req, res, next) => {
     const users = await querySet.query;
     const userCount = await User.countDocuments();
 
-  res.status(200).json({
-    success: true,
-    users,
-    userCount
-  });
+    res.status(200).json({
+        success: true,
+        users,
+        userCount
+    });
 });
 
 // update User Profile (admin)
 exports.updateUser = catchAsyncErrors(async (req, res, next) => {
-  const newUserData = {
-    name: req.body.name,
-    email: req.body.email,
-    role: req.body.role,
-  };
+    const newUserData = {
+        name: req.body.name,
+        email: req.body.email,
+        role: req.body.role,
+    };
 
-  // cloud strorage
+    // cloud strorage
 
-  const user = await User.findByIdAndUpdate(req.params.id, newUserData, {
-    new: true,
-    runValidators: true,
-    useFindAndModify: false
-  });
+    const user = await User.findByIdAndUpdate(req.params.id, newUserData, {
+        new: true,
+        runValidators: true,
+        useFindAndModify: false
+    });
 
-  res.status(200).json({
-    success: true,
-    message: "User updated successfully",
-    user
-  });
+    res.status(200).json({
+        success: true,
+        message: "User updated successfully",
+        user
+    });
 });
 
 // Delete User --Admin
 exports.deleteUser = catchAsyncErrors(async (req, res, next) => {
-  const userId = req.params.id;
+    const userId = req.params.id;
 
-  const user = await User.findById(userId);
+    const user = await User.findById(userId);
 
-  if (!user) {
-    return next(
-      new ErrorHandler(`User does not exist with Id: ${req.params.id}`, 400)
-    );
-  }
+    if (!user) {
+        return next(
+            new ErrorHandler(`User does not exist with Id: ${req.params.id}`, 400)
+        );
+    }
 
-  // cloud strorage
+    // cloud strorage
 
-  await user.deleteOne()
+    await user.deleteOne()
 
-  res.status(200).json({
-    success: true,
-    message: "User deleted successfully",
-    user
-  });
+    res.status(200).json({
+        success: true,
+        message: "User deleted successfully",
+        user
+    });
 });

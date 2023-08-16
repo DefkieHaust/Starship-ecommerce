@@ -82,8 +82,8 @@ const orderSchema = new mongoose.Schema({
 
 // make sure that product is always unique in the array
 orderSchema.path('orderItems').validate((list) => {
-  const products = list.map(obj => obj.product.toString());
-  return products.length === new Set(products).size;
+    const products = list.map(obj => obj.product.toString());
+    return products.length === new Set(products).size;
 }, 'Duplicate products found in the array');
 
 module.exports = mongoose.model("Order", orderSchema);
