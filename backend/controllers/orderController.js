@@ -77,7 +77,10 @@ exports.newOrder = catchAsyncErrors(async (req, res, next) => {
 
 // Get all orders
 exports.getOrders = catchAsyncErrors(async (req, res, next) => {
-    const querySet = new QueryHandler(Order.find({ user: req.user._id }), req.query).resolve();
+    const querySet = new QueryHandler(
+        Order.find({ user: req.user._id }).populate("user", "name email"),
+        req.query
+    ).resolve();
     const orders = await querySet.query;
 
     res.status(200).json({
@@ -118,7 +121,7 @@ exports.getSingleOrder = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler("Order not found", 404));
     }
 
-    if(order.user.id.toString() !== req.user._id.toString()) {
+    if(order.user.toString() !== req.user._id.toString()) {
         return next(new ErrorHandler("Unauthorized", 401));
     }
 
@@ -131,12 +134,14 @@ exports.getSingleOrder = catchAsyncErrors(async (req, res, next) => {
 
 // get all orders - admin
 exports.getAllOrders = catchAsyncErrors(async (req, res, next) => {
-    const querySet = new QueryHandler(Order.find(), req.query).resolve();
-    const orders = (await querySet.query).populate("user", "name email");
+    const querySet = new QueryHandler(
+        Order.find().populate("user", "name email"),
+        req.query
+    ).resolve();
+    const orders = await querySet.query
 
     res.status(200).json({
         success: true,
-        totalAmount,
         orders
     })
 
