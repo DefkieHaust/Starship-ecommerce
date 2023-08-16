@@ -127,3 +127,69 @@ exports.getSingleOrder = catchAsyncErrors(async (req, res, next) => {
         order
     })
 })
+
+
+// get all orders - admin
+exports.getAllOrders = catchAsyncErrors(async (req, res, next) => {
+    const querySet = new QueryHandler(Order.find(), req.query).resolve();
+    const orders = (await querySet.query).populate("user", "name email");
+
+    res.status(200).json({
+        success: true,
+        totalAmount,
+        orders
+    })
+
+})
+
+
+// update order - admin
+exports.updateOneOrder = catchAsyncErrors(async (req, res, next) => {
+    const order = await Order.findByIdAndUpdate(req.params.id, req.body, {
+        new: true,
+        runValidators: true,
+        useFindAndModify: false
+    });
+
+    if(!order) {
+        return next(new ErrorHandler("Order not found", 404));
+    }
+
+    res.status(200).json({
+        success: true,
+        message: "Order updated succesfully",
+        order
+    })
+})
+
+
+// getOneOrder - admin
+exports.getOneOrder = catchAsyncErrors(async (req, res, next) => {
+    const order = await Order.findById(req.params.id).populate("user", "name email");
+
+    if(!order) {
+        return next(new ErrorHandler("Order not found", 404));
+    }
+
+    res.status(200).json({
+        success: true,
+        order
+    })
+})
+
+
+// deleteOneOrder - admin
+exports.deleteOneOrder = catchAsyncErrors(async (req, res, next) => {
+    const order = await Order.findByIdAndDelete(req.params.id);
+
+    if(!order) {
+        return next(new ErrorHandler("Order not found", 404));
+    }
+
+    res.status(200).json({
+        success: true,
+        message: "Order deleted succesfully",
+        order
+    })
+    
+})

@@ -2,6 +2,7 @@ const ErrorHandler = require('../utils/errorHandler');
 const catchAsyncErrors = require('../middleware/asyncError');
 const QueryHandler = require('../utils/queryHandler');
 const Address = require('../models/addressModel');
+const { query } = require('express');
 
 // create address
 exports.createAddress = catchAsyncErrors(async (req, res, next) => {
@@ -19,7 +20,9 @@ exports.createAddress = catchAsyncErrors(async (req, res, next) => {
 
 // get address
 exports.getAddresses = catchAsyncErrors(async (req, res, next) => {
-    const addresses = await Address.find({ user: req.user._id });
+    const query = new QueryHandler(Address.find({ user: req.user._id }), req.query)
+    const querySet = query.resolve();
+    const addresses = await querySet.query;
 
     res.status(200).json({
         success: true,
@@ -77,6 +80,10 @@ exports.getSingleAddress = catchAsyncErrors(async (req, res, next) => {
 
     if (!address) {
         return next(new ErrorHandler('Address not found', 404));
+    }
+
+    if(address.user.toString() !== req.user._id.toString()) {
+        return next(new ErrorHandler("Unauthorized", 401));
     }
 
     res.status(200).json({
