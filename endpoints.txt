@@ -1,5 +1,3 @@
-avatar in user create and edit
-product images in product create and edit
 requiredFields middleware
 only purchased products can be reviewed
 
@@ -13,7 +11,7 @@ http://HOST:PORT/api/v1
 		PUT: (user) {
 			name, // opt
 			email, // opt
-			avatar // opt (image format)
+			avatar // opt, Must be image buffer object
 		} // Changes self information
 		
 		DELETE: (user) {
@@ -118,6 +116,22 @@ http://HOST:PORT/api/v1
 				totalPrice[lte] = 10, // Returns all orders with total price less than or equal to 10
 				subtotal[gt] = 7 // Returns all orders with subtotal greater than 7
 			] // Returns orders from user based on query
+			
+			POST: (user) {
+				address,
+				orderItems [
+					{
+						id, // product id
+						quantity
+					}
+				] // Must have at least 1 order item
+			} // Creates an order and returns payment intent secret key
+			
+		/orders/:id
+		
+			GET: (user) // Returns specific user order
+			
+			DELETE: (user) // Deletes specific order
 	
 	/users
 		
@@ -139,7 +153,7 @@ http://HOST:PORT/api/v1
 			name, // opt
 			email, // opt
 			role, // opt
-			avatar {
+			avatar: {
 				public_id,
 				url
 			} // opt
@@ -155,12 +169,12 @@ http://HOST:PORT/api/v1
 			price,
 			category,
 			rating, //opt
-			images [
-				image
+			images: [
+				image // Must be image buffer object
 			]
 			stock, // opt, def:1
 			numOfReviews, // def:0
-			reviews [
+			reviews: [
 				{
 					user,
 					rating,
@@ -201,14 +215,14 @@ http://HOST:PORT/api/v1
 			category, // opt
 			rating, //opt
 			images [
-				image
+				image // Must be image buffer object
 			] // opt
 			deleteImages [
 				"public_id"
 			], // opt, Will delete product images by public_id
 			stock, // opt, def:1
 			numOfReviews, // opt, def:0
-			reviews [
+			reviews: [
 				{
 					user,
 					rating,
@@ -320,3 +334,13 @@ http://HOST:PORT/api/v1
 		} // Updates an specific order
 		
 		DELETE: (admin) // Deletes an specific order
+		
+	/payments
+		
+		/api-key
+			
+			GET: (user) // Returns payment api key
+			
+		/webhook
+		
+			POST: // For internal use only

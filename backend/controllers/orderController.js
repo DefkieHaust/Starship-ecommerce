@@ -4,13 +4,13 @@ const QueryHandler = require('../utils/queryHandler');
 const Order = require('../models/orderModel');
 const Address = require('../models/addressModel');
 const Product = require('../models/productModel');
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 // Create New Order
 exports.newOrder = catchAsyncErrors(async (req, res, next) => {
     const {
         address,
-        orderItems,
-        paymentInfo
+        orderItems
     } = req.body;
 
     const addressObj = await Address.findById(address);
@@ -53,7 +53,6 @@ exports.newOrder = catchAsyncErrors(async (req, res, next) => {
         name: req.user.name,
         address: addressObj._id,
         orderItems: items,
-        paymentInfo,
         subtotal: total,
         shippingPrice,
         totalPrice,
@@ -63,10 +62,27 @@ exports.newOrder = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler("Order not created", 500));
     }
 
+    const paymentIntent = await stripe.paymentIntents.create({
+        amount: totalPrice * 100,
+        currency: process.env.STRIPE_CURRENCY,
+        metadata: {
+            order_id: order._id.toString(),
+            email: req.user.email
+        }
+    })
+
+    order.paymentInfo = {
+        id: paymentIntent.id,
+        status: paymentIntent.status
+    }
+
+    order.save()
+
     res.status(200).json({
         success: true,
-        message: "Order created succesfully",
-        order: order
+        message: "Order created succesfully, waiting for payment",
+        order,
+        paymentIntent: paymentIntent.client_secret
     })
 })
 
