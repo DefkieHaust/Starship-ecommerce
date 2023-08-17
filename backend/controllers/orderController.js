@@ -34,11 +34,7 @@ exports.newOrder = catchAsyncErrors(async (req, res, next) => {
         }
 
         total += item.price * product.quantity;
-        let image
-
-        try {
-            image = item.images[0].url;
-        } catch (err) {}
+        image = item.images[0].url;
 
         items.push({
             product: item._id,

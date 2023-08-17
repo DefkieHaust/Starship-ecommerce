@@ -1,5 +1,6 @@
 const Product = require('../models/productModel');
 const ErrorHandler = require('../utils/errorHandler');
+const cloudinary = require('cloudinary').v2;
 const catchAsyncErrors = require('../middleware/asyncError');
 const QueryHandler = require('../utils/queryHandler');
 const Review = require('../models/reviewModel');
@@ -20,9 +21,44 @@ exports.getAllProducts = catchAsyncErrors( async(req, res, next)=> {
 
 // create product; --admin
 exports.createProduct = catchAsyncErrors( async(req, res, next)=> {
-    req.body.user = req.user.id;
-    const postProduct = req.body;
-    const product = await Product.create(postProduct)
+    if(!req.files || !req.files.images) {
+        return next(new ErrorHandler('Please upload at least 1 product image', 400))
+    }
+
+    const product = await Product.create({
+        vender: req.user.id,
+        ...req.body
+    })
+
+    let imageObjs = [];
+
+    if(Array.isArray(req.files.images)) {
+        imageObjs = req.files.images
+    } else {
+        imageObjs.push(req.files.images)
+    }
+
+    const images = [];
+
+    for (const image of imageObjs) {
+        const uploadImage = await cloudinary.uploader.upload(image.tempFilePath, {
+            folder: 'products'
+        })
+
+        images.push({
+            public_id: uploadImage.public_id,
+            url: uploadImage.secure_url
+        })
+
+    }
+
+    if(images.length < 1) {
+        product.deleteOne()
+        return next(new ErrorHandler('Please upload at least 1 product image', 400))
+    }
+
+    product.images = images;
+    await product.save();
 
     res.status(201).json({
         success: true,
@@ -64,6 +100,44 @@ exports.updateProduct = catchAsyncErrors( async(req, res, next)=> {
         useFindAndModify: false
     })
 
+
+    if(req.files && req.files.images) {
+    
+        let imageObjs = [];
+
+        if(Array.isArray(req.files.images)) {
+            imageObjs = req.files.images
+        } else {
+            imageObjs.push(req.files.images)
+        }
+
+
+        for (const image of imageObjs) {
+            const uploadImage = await cloudinary.uploader.upload(image.tempFilePath, {
+                folder: 'products'
+            })
+
+            product.images.push({
+                public_id: uploadImage.public_id,
+                url: uploadImage.secure_url
+            })
+
+        }
+
+        product.save()
+    }
+
+    const deleteImages = req.body.deleteImages;
+
+    if(deleteImages) {
+        for (const image of deleteImages) {
+           await cloudinary.uploader.destroy(image);
+        }
+
+        product.images = product.images.filter(img => !deleteImages.includes(img.public_id));
+        product.save()
+    }
+
     res.status(201).json({
         success: true,
         message: "Product updated successfully",
@@ -83,6 +157,10 @@ exports.deleteProduct = catchAsyncErrors( async(req, res, next)=> {
     }
 
     await product.deleteOne()
+
+    for (const image of product.images) {
+        await cloudinary.uploader.destroy(image.public_id);
+    } 
 
     res.status(200).json({
         success: true,

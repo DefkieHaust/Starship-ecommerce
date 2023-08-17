@@ -47,7 +47,7 @@ const productSchema = mongoose.Schema({
         type: Number,
         default: 0
     },
-    user:{
+    vender:{
         type: mongoose.Schema.ObjectId,
         ref: "User",
         required: true,

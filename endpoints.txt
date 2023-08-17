@@ -1,0 +1,322 @@
+avatar in user create and edit
+product images in product create and edit
+requiredFields middleware
+only purchased products can be reviewed
+
+
+http://HOST:PORT/api/v1
+
+	/user
+	
+		GET: (user) // Returns self information
+		
+		PUT: (user) {
+			name, // opt
+			email, // opt
+			avatar // opt (image format)
+		} // Changes self information
+		
+		DELETE: (user) {
+			password,
+			confirmPassword
+		} // Deletes user account
+		
+		/register
+		
+			POST: {
+				name,
+				email,
+				password,
+				confirmPassword
+			} // Creates user
+			
+		/login
+		
+			POST: {
+				email,
+				password
+			} // Adds token in cookies
+			
+		/logout
+		
+			GET: (user) cookies[
+				token
+			] // Removes token from cookies
+			
+		/password
+		
+			/update
+			
+				PUT: (user) {
+					password,
+					newPassword,
+					confirmPassword
+				} // Changes your own password
+				
+			/reset
+			
+				PUT: {
+					email,
+					redirectURL
+				} // Sends password reset url to email (token gets appended to end of redirectURL)
+			
+			/reset/:token
+			
+				PUT: {
+					password,
+					confirmPassword
+				} // Resets password and adds token to cookies
+				
+		/addresses
+		
+			GET: (user) params[
+				(none) // Returns all user addresses
+				limit, // Returns a limited amount of addresses
+				page, // Adds pagination to search query, must be used with limit param to define amount of addresses per page
+				address, // Returns addresses with specific address
+				city, // Returns addresses in an specific city
+				state, // Returns addresses from an specific state
+				country, // Returns addresses from specific country
+				zipCode // Returns addresses from specific zip code
+			] // Returns all addresses of user
+		
+			POST: (user) {
+				address,
+				city,
+				state,
+				country,
+				zipCode
+			} // Creates a user address
+			
+		/addresses/:id
+		
+			GET: (user) // Returns a user address
+		
+			PUT: (user) {
+				address,
+				city,
+				state,
+				country,
+				zipCode
+			} // Updates a user address
+			
+			DELETE: (user) // deletes a user address
+			
+		/orders
+		
+			GET: (user) params[
+				(none) // Returns all user's orders
+				limit, // Returns a limited amount of orders
+				page, // Adds pagination to search query, must be used with limit param to define amount of orders per page
+				address, // Returns orders with specific address
+				subtoal, // Returns orders with specific subtotal
+				shippingPrice, // Returns orders with specific shipping price
+				totalPrice, // Returns orders with specific total price
+				orderStatus, // Returns orders with specific status
+				
+				// Note: All number params support gt, gte, lt and lte operators, e.g
+				totalPrice[lte] = 10, // Returns all orders with total price less than or equal to 10
+				subtotal[gt] = 7 // Returns all orders with subtotal greater than 7
+			] // Returns orders from user based on query
+	
+	/users
+		
+		GET: (admin) params[
+			(none) // Returns all users
+			keyword, // Searches for specific sequence of characters in user name and return all matches
+			limit, // Returns a limited amount of users
+			page, // Adds pagination to search query, must be used with limit param to define amount of users per page
+			name, // Returns user with specific name
+			email, // Returns user with specific email
+			role // Returns user with specific role
+		] // Returns users depending on query
+		
+	/users/:id
+	
+		GET: (admin) // Returns user with specific id
+		
+		PUT: (admin) {
+			name, // opt
+			email, // opt
+			role, // opt
+			avatar {
+				public_id,
+				url
+			} // opt
+		} // Changes user information
+		
+		DELETE: (admin) // Deletes user
+		
+	/products
+	
+		POST: (admin) {
+			name,
+			description,
+			price,
+			category,
+			rating, //opt
+			images [
+				image
+			]
+			stock, // opt, def:1
+			numOfReviews, // def:0
+			reviews [
+				{
+					user,
+					rating,
+					comment
+				}
+			] // opt
+			createdAt // opt, def:now
+		} // Creates a product
+		
+		GET: params[
+			(none) // Returns all products
+			keyword, // Searches for specific sequence of characters in product name and return all matches
+			limit, // Returns a limited amount of products
+			page, // Adds pagination to search query, must be used with limit param to define amount of product per page
+			name, // Returns product with specific name
+			description, // Returns product with specific description
+			price, // Returns product with specific price
+			rating, // Returns product with specific rating
+			category, // Returns product with specific category
+			stock, // Returns product with specific stock
+			numOfReviews, // Returns product with specific number of reeviews
+			user, // Returns product made by specific user
+			createdAt, // Returns product creeated at specific date 
+			
+			// Note: All number params support gt, gte, lt and lte operators, e.g
+			price[lte] = 10, // Returns all products with price less than or equal to 10
+			rating[gt] = 7 // Returns all products with rating greater than 7
+		] // Gets products depending on query
+		
+	/products/:id
+	
+		GET: // returns product with specific id
+		
+		PUT: (admin) {
+			name, // opt
+			description, // opt
+			price, // opt
+			category, // opt
+			rating, //opt
+			images [
+				image
+			] // opt
+			deleteImages [
+				"public_id"
+			], // opt, Will delete product images by public_id
+			stock, // opt, def:1
+			numOfReviews, // opt, def:0
+			reviews [
+				{
+					user,
+					rating,
+					comment
+				}
+			] // opt
+			createdAt // opt, def:now
+		} // Updates produt
+		
+		DELETE: (admin) // deletes a product
+		
+		/reviews
+			
+			GET: params[
+				(none) // Returns all products
+				keyword, // Searches for specific sequence of characters in review name and return all matches
+				limit, // Returns a limited amount of reviews
+				page, // Adds pagination to search query, must be used with limit param to define amount of reviews per page
+				name, // Returns review with specific name
+				user, // Returns review with specific user id
+				rating // Returns review with specific rating
+				
+				// Note: All number params support gt, gte, lt and lte operators, e.g
+				rating[lte] = 10, // Returns all reviews with rating less than or equal to 10
+				rating[gt] = 7 // Returns all reviews with rating greater than 7
+			] // Returns reviews of a product based on query
+		
+			PUT: (user) {
+				rating,
+				comment, // opt
+			} // Adds or updates user review
+			
+			DELETE: (user) // Deletes user review
+			
+	/addresses
+	
+		GET: (admin) params[
+			(none)  // Returns all addresses
+			limit, // Returns a limited amount of addresses
+			page, // Adds pagination to search query, must be used with limit param to define amount of addresses per page
+			user, // Returns all addresses of an specific user
+			address, // Returns addresses with specific address
+			city, // Returns addresses in an specific city
+			state, // Returns addresses from an specific state
+			country, // Returns addresses from specific country
+			zipCode // Returns addresses from specific zip code
+		] // Returns addresses depending on query
+		
+	/addresses/:id
+		
+		PUT: (admin) {
+			user, // opt
+			address, // opt
+			city, // opt
+			state, // opt
+			country, // opt
+			zipCode // opt
+		} // Updates specific address
+		
+		GET: (admin) // Returns specific address
+		
+		DELETE: (admin) // Deletes specific address
+		
+	/orders
+	
+		GET: (admin) params[
+			(none) // Returns all orders
+			limit, // Returns a limited amount of orders
+			page, // Adds pagination to search query, must be used with limit param to define amount of orders per page
+			address, // Returns orders with specific address
+			subtoal, // Returns orders with specific subtotal
+			shippingPrice, // Returns orders with specific shipping price
+			totalPrice, // Returns orders with specific total price
+			orderStatus, // Returns orders with specific status
+				
+			// Note: All number params support gt, gte, lt and lte operators, e.g
+			totalPrice[lte] = 10, // Returns all orders with total price less than or equal to 10
+			subtotal[gt] = 7 // Returns all orders with subtotal greater than 7
+		] // Returns orders based on query
+		
+	/orders/:id
+	
+		GET: (admin) // Returns an specific order
+		
+		PUT: (admin) {
+			user, // opt
+			name, // opt
+			address, // opt
+			orderItems: [
+				{
+					name,
+					price,
+					quantity,
+					image, // opt
+					product
+				}
+			], // opt
+			paymentInfo: {
+				id,
+				status,
+			}, // opt
+			paidAt, // opt
+			subtotal, // opt
+			shippingPrice, // opt
+			totalPrice, // opt
+			orderStatus, // opt
+			deliveredAt, // opt
+			createdAt // opt
+		} // Updates an specific order
+		
+		DELETE: (admin) // Deletes an specific order
