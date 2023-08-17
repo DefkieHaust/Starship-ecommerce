@@ -17,7 +17,12 @@ dotenv.config({path: './config/.env'})
 const connectDatabase = require('./config/database');
 connectDatabase();
 
+//media
+const connectCloudinary = require('./config/cloudinary')
+connectCloudinary()
 
+
+// Run Server
 const server = app.listen(process.env.PORT || 5000, process.env.HOST || "localhost", ()=> {
     console.log(`server is running on ${process.env.HOST || "localhost"}:${process.env.PORT || 5000}`)
 })

@@ -4,22 +4,42 @@ const ErrorHandler = require("../utils/errorHandler");
 const sendToken = require("../utils/jwtToken");
 const sendEmail = require("../utils/sendEmail");
 const QueryHandler = require("../utils/queryHandler");
+const cloudinary = require("cloudinary").v2;
 
 // register user
 exports.registerUser = catchAsyncErrors(async (req, res, next) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, confirmPassword} = req.body;
+
+    if(password !== confirmPassword) {
+        return next(new ErrorHandler("Password does not match", 400));
+    }
 
     const user = await User.create({
         name,
         email,
         password,
         avatar: {
-            public_id: "this is avatar",
-            url: "this is avatar url",
+            public_id: process.env.DEFAULT_AVATAR_ID,
+            url: process.env.DEFAULT_AVATAR_URL ,
         },
     });
 
-    sendToken(user, 201, res, "Created account successfully");
+    if(req.files && req.files.avatar) {
+        const avatarUpload = await cloudinary.uploader.upload( req.files.avatar.tempFilePath, {
+            folder: "avatars",
+            width: 400,
+            crop: "scale",
+        })
+        
+        user.avatar = {
+            public_id: avatarUpload.public_id,
+            url: avatarUpload.secure_url,
+        }
+
+        await user.save()
+    }
+
+    sendToken(user, 201, res, "Account created successfully");
 });
 
 // login user;
@@ -63,6 +83,10 @@ exports.logoutUser = catchAsyncErrors(async (req, res, next) => {
 exports.deleteAccount = catchAsyncErrors(async (req, res, next) => {
     const user = await User.findById(req.user.id).select("+password");
 
+    if(!req.body.password || !req.body.confirmPassword) {
+        return next(new ErrorHandler("Password missing", 400));
+    }
+
     const passwordMatched = await user.comparePassword(req.body.password);
 
     if (!passwordMatched) {
@@ -74,6 +98,12 @@ exports.deleteAccount = catchAsyncErrors(async (req, res, next) => {
     }
 
     const account = await User.findByIdAndDelete(req.user.id);
+
+    const avatar = account.avatar.public_id
+
+    if(avatar !== "avatars/default") {
+        await cloudinary.uploader.destroy(avatar)
+    }
 
     res.status(200).json({
         success: true,
@@ -148,6 +178,8 @@ exports.resetPassword = catchAsyncErrors(async(req, res, next)=> {
 
 })
 
+
+// get user profile
 exports.getUserDetails = catchAsyncErrors(async (req, res, next) => {
     const user = await User.findById(req.user.id);
 
@@ -180,12 +212,29 @@ exports.updatePassword = catchAsyncErrors(async (req, res, next) => {
 
 // update User Profile
 exports.updateProfile = catchAsyncErrors(async (req, res, next) => {
+    const avatar = req.files.avatar;
+
     const newUserData = {
         name: req.body.name,
         email: req.body.email,
     };
 
-    // cloud strorage
+    if(avatar) {
+        const avatarUpload = await cloudinary.uploader.upload(avatar.tempFilePath, {
+            folder: "avatars",
+            width: 400,
+            crop: "scale",
+        })
+
+        if(req.user.avatar.public_id !== "avatars/default") {
+            await cloudinary.uploader.destroy(req.user.avatar.public_id)
+        }
+
+        newUserData.avatar = {
+            public_id: avatarUpload.public_id,
+            url: avatarUpload.secure_url
+        }
+    }
 
     const user = await User.findByIdAndUpdate(req.user.id, newUserData, {
         new: true,
@@ -237,8 +286,6 @@ exports.updateUser = catchAsyncErrors(async (req, res, next) => {
         role: req.body.role,
     };
 
-    // cloud strorage
-
     const user = await User.findByIdAndUpdate(req.params.id, newUserData, {
         new: true,
         runValidators: true,
@@ -264,9 +311,13 @@ exports.deleteUser = catchAsyncErrors(async (req, res, next) => {
         );
     }
 
-    // cloud strorage
-
     await user.deleteOne()
+
+    const avatar = user.avatar.public_id
+
+    if(avatar !== "avatars/default") {
+        await cloudinary.uploader.destroy(avatar)
+    }
 
     res.status(200).json({
         success: true,
