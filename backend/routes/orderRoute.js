@@ -11,10 +11,15 @@ const {
     getOneOrder,
     updateOneOrder
 } = require('../controllers/orderController');
+const requireFields = require('../middleware/requireFields');
 
 router.route('/user/orders')
     .get(isAuthenticatedUser, getOrders)
-    .post(isAuthenticatedUser, newOrder)
+    .post(
+        isAuthenticatedUser,
+        requireFields("address", "orderItems"),
+        newOrder
+    )
 
 router.route('/user/orders/:id')
     .delete(isAuthenticatedUser, deleteOrder)

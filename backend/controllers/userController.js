@@ -46,10 +46,6 @@ exports.registerUser = catchAsyncErrors(async (req, res, next) => {
 exports.loginUser = catchAsyncErrors(async (req, res, next) => {
     const { email, password } = req.body;
  
-    if (!email || !password) {
-        return next(new ErrorHandler("Email or password missing", 400));
-    }
-
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
@@ -82,10 +78,6 @@ exports.logoutUser = catchAsyncErrors(async (req, res, next) => {
 // delete account
 exports.deleteAccount = catchAsyncErrors(async (req, res, next) => {
     const user = await User.findById(req.user.id).select("+password");
-
-    if(!req.body.password || !req.body.confirmPassword) {
-        return next(new ErrorHandler("Password missing", 400));
-    }
 
     const passwordMatched = await user.comparePassword(req.body.password);
 
@@ -199,7 +191,7 @@ exports.updatePassword = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler("Old password is incorrect", 400));
     }
 
-    if (req.body.newPassword !== req.body.confirmPassword) {
+    if (req.body.newPassword !== req.body.confirmNewPassword) {
         return next(new ErrorHandler("Password does not match", 400));
     }
 

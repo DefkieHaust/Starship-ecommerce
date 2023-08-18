@@ -12,10 +12,15 @@ const {
     getOneAddress
 } = require('../controllers/addressController');
 const { isAuthenticatedUser, authorizeRoles } = require('../middleware/auth');
+const requireFields = require('../middleware/requireFields');
 
 router.route('/user/addresses')
     .get(isAuthenticatedUser, getAddresses)
-    .post(isAuthenticatedUser, createAddress)
+    .post(
+        isAuthenticatedUser,
+        requireFields("address", "city", "state", "country", "zipCode"),
+        createAddress
+    )
 
 router.route('/user/addresses/:id')
     .get(isAuthenticatedUser, getSingleAddress)

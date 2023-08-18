@@ -179,7 +179,7 @@ exports.createProductReview = catchAsyncErrors(async (req, res, next) => {
         product: product._id,
         user: req.user._id,
         name: req.user.name,
-        rating: rating,
+        rating,
         comment,
     };
 

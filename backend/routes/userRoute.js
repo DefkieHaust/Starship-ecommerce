@@ -15,22 +15,51 @@ const {
     deleteAccount
 } = require("../controllers/userController");
 const { isAuthenticatedUser, authorizeRoles } = require('../middleware/auth');
+const requireFields = require('../middleware/requireFields');
 const router = express.Router();
 
 router.route("/user/register")
-    .post(registerUser);
+    .post(
+        requireFields(
+            "name",
+            "email",
+            "password",
+            "confirmPassword"
+        ),
+        registerUser
+    );
 
 router.route("/user/login")
-    .post(loginUser)
+    .post(
+        requireFields(
+            "email",
+            "password"
+        ),
+        loginUser
+    )
 
 router.route("/user/password/update")
-    .put(isAuthenticatedUser, updatePassword)
+    .put(
+        isAuthenticatedUser,
+        requireFields(
+            "password",
+            "newPassword",
+            "confirmNewPassword"
+        ),
+        updatePassword
+    )
 
 router.route("/user/password/reset")
-    .put(forgotPassword);
+    .put(
+        requireFields("email"),
+        forgotPassword
+    );
 
 router.route('/user/password/reset/:token')
-    .put(resetPassword);
+    .put(
+        requireFields("password", "confirmPassword"),
+        resetPassword
+    );
 
 router.route("/user/logout")
     .get(isAuthenticatedUser, logoutUser);
@@ -38,7 +67,11 @@ router.route("/user/logout")
 router.route("/user")
     .get(isAuthenticatedUser, getUserDetails)
     .put(isAuthenticatedUser, updateProfile)
-    .delete(isAuthenticatedUser, deleteAccount);
+    .delete(
+        isAuthenticatedUser,
+        requireFields("password", "confirmPassword"),
+        deleteAccount
+    );
 
 router.route("/users")
     .get(isAuthenticatedUser, authorizeRoles("admin"), getAllUser)

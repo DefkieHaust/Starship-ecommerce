@@ -66,7 +66,8 @@ exports.newOrder = catchAsyncErrors(async (req, res, next) => {
         amount: totalPrice * 100,
         currency: process.env.STRIPE_CURRENCY,
         metadata: {
-            order_id: order._id.toString(),
+            order: order.id,
+            user: req.user.id,
             email: req.user.email
         }
     })

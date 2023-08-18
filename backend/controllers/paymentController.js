@@ -1,47 +1,50 @@
 const catchAsyncErrors = require("../middleware/asyncError");
+const ErrorHandler = require("../utils/errorHandler");
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const updateOrderStatus = require("../utils/updateOrderStatus");
+const Order = require("../models/orderModel");
+
 
 exports.sendPaymentsApiKey = catchAsyncErrors(async (req, res, next) => {
   res.status(200).json({ PaymentsApiKey: process.env.STRIPE_API_KEY });
 });
 
 exports.paymentUpdateListener = catchAsyncErrors(async (req, res, next) => {
-    const sig = request.headers['stripe-signature'];
+    const sig = req.headers['stripe-signature'];
 
     let event;
 
     try {
-        event = stripe.webhooks.constructEvent(request.body, sig, process.env.STRIPE_WEBHOOK_KEY);
+        event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_KEY);
     } catch (err) {
-        res.status(400).send(`Webhook Error: ${err.message}`);
-        return;
+        return next(new ErrorHandler(`Webhook Error: ${err.message}`, 400));
     }
 
     // Handle the event
     switch (event.type) {
         case 'payment_intent.canceled':
             const paymentIntentCanceled = event.data.object;
-            // Then define and call a function to handle the event payment_intent.canceled
+            await Order.findByIdAndDelete(paymentIntentCanceled.metadata.order)
             break;
         case 'payment_intent.partially_funded':
             const paymentIntentPartiallyFunded = event.data.object;
-            // Then define and call a function to handle the event payment_intent.partially_funded
+            await updateOrderStatus(paymentIntentPartiallyFunded)
             break;
         case 'payment_intent.payment_failed':
             const paymentIntentPaymentFailed = event.data.object;
-            // Then define and call a function to handle the event payment_intent.payment_failed
+            await Order.findByIdAndDelete(paymentIntentPaymentFailed.metadata.order)
             break;
         case 'payment_intent.processing':
             const paymentIntentProcessing = event.data.object;
-            // Then define and call a function to handle the event payment_intent.processing
+            await updateOrderStatus(paymentIntentProcessing)
             break;
         case 'payment_intent.succeeded':
             const paymentIntentSucceeded = event.data.object;
-            // Then define and call a function to handle the event payment_intent.succeeded
+            await updateOrderStatus(paymentIntentSucceeded)
+            await Order.findByIdAndUpdate(paymentIntentSucceeded.metadata.order, {
+                paidAt: Date.now(),
+            }, { useFindAndModify: false })
             break;
-        // ... handle other event types
-        default:
-            console.log(`Unhandled event type ${event.type}`);
     }
 
     // Return a 200 response to acknowledge receipt of the event

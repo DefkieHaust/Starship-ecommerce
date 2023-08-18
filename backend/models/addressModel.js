@@ -8,23 +8,23 @@ const addressSchema = new mongoose.Schema({
     },
     address: {
         type: String,
-        required: [true, 'Please provide address'],
+        required: true,
     },
     city: {
         type: String,
-        required: [true, 'Please provide city'],
+        required: true,
     },
     state: {
         type: String,
-        required: [true, 'Please provide state'],
+        required: true,
     },
     country: {
         type: String,
-        required: [true, 'Please provide country'],
+        required: true,
     },
     zipCode: {
         type: Number,
-        required: [true, 'Please provide zipCode'],
+        required: true,
     },
 })
 

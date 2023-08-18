@@ -1,6 +1,8 @@
-requiredFields middleware
-only purchased products can be reviewed
-
+total endpoints = 40
+no auth endpoints = 7
+user endpoints = 17
+admin endpoints = 15
+bot endpoints = 1
 
 http://HOST:PORT/api/v1
 
@@ -48,7 +50,7 @@ http://HOST:PORT/api/v1
 				PUT: (user) {
 					password,
 					newPassword,
-					confirmPassword
+					confirmNewPassword
 				} // Changes your own password
 				
 			/reset
@@ -341,6 +343,8 @@ http://HOST:PORT/api/v1
 			
 			GET: (user) // Returns payment api key
 			
-		/webhook
+	/webhook
+
+		/stripe
 		
 			POST: // For internal use only

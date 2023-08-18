@@ -9,7 +9,10 @@ const errorMiddleware = require('./middleware/error');
 
 dotenv.config({path: './config/.env'})
 
-//for json;
+//webhooks events
+app.use('/api/v1', require('./routes/webhookRoute'))
+
+//request middlewares
 app.use(express.json());
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -23,7 +26,7 @@ app.use('/api/v1', require('./routes/orderRoute'))
 app.use('/api/v1', require('./routes/paymentRoute'))
 
 
-//use middlewares here;
+//response middlewares
 app.use(errorMiddleware)
 
 
