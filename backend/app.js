@@ -3,11 +3,15 @@ const app = express()
 const cookieParser = require("cookie-parser")
 const bodyParser = require("body-parser");
 const fileUpload = require("express-fileupload");
+const morgan = require('morgan')
 const dotenv = require('dotenv')
 
 const errorMiddleware = require('./middleware/error');
 
 dotenv.config({path: './config/.env'})
+
+// loggers
+app.use(morgan("combined"))
 
 //webhooks events
 app.use('/api/v1', require('./routes/webhookRoute'))
