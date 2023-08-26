@@ -208,14 +208,13 @@ exports.updatePassword = catchAsyncErrors(async (req, res, next) => {
 
 // update User Profile
 exports.updateProfile = catchAsyncErrors(async (req, res, next) => {
-    const avatar = req.files.avatar;
-
     const newUserData = {
         name: req.body.name,
         email: req.body.email,
     };
 
-    if(avatar) {
+    if(req.files && req.files.avatar) {
+        const avatar = req.files.avatar;
         const avatarUpload = await cloudinary.uploader.upload(avatar.tempFilePath, {
             folder: "avatars",
             width: 400,
