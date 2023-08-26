@@ -39,6 +39,8 @@ exports.registerUser = catchAsyncErrors(async (req, res, next) => {
         await user.save()
     }
 
+    user.password = undefined
+
     sendToken(user, 201, res, "Account created successfully");
 });
 
@@ -57,6 +59,8 @@ exports.loginUser = catchAsyncErrors(async (req, res, next) => {
     if (!isPasswordMatch) {
         return next(new ErrorHandler("Invalid email or password", 400));
     }
+
+    user.password = undefined
 
     sendToken(user, 200, res, "Logged in successfully");
 });
