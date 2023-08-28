@@ -122,7 +122,7 @@ exports.forgotPassword = catchAsyncErrors(async (req, res, next) => {
     await user.save({ validationBeforeSave: false });
 
     const passwordResetUrl = `${req.body.redirectURL}${resetToken}`;
-
+    
     const message = `Below is your requested password url \n\n ${passwordResetUrl} \n \nIf you did not request the url, Please ignore this message`;
 
     try {
