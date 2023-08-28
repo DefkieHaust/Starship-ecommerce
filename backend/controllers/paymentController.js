@@ -4,11 +4,6 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const updateOrderStatus = require("../utils/updateOrderStatus");
 const Order = require("../models/orderModel");
 
-
-exports.sendPaymentsApiKey = catchAsyncErrors(async (req, res, next) => {
-  res.status(200).json({ PaymentsApiKey: process.env.STRIPE_API_KEY });
-});
-
 exports.paymentUpdateListener = catchAsyncErrors(async (req, res, next) => {
     const sig = req.headers['stripe-signature'];
 

@@ -91,7 +91,7 @@ exports.newOrder = catchAsyncErrors(async (req, res, next) => {
 // Get all orders
 exports.getOrders = catchAsyncErrors(async (req, res, next) => {
     const querySet = new QueryHandler(
-        Order.find({ user: req.user._id }).populate("user", "name email"),
+        Order.find({ user: req.user._id }).populate("user", "name email").populate("address", "address state city country zipCode"),
         req.query
     ).resolve();
     const orders = await querySet.query;
@@ -148,7 +148,7 @@ exports.getSingleOrder = catchAsyncErrors(async (req, res, next) => {
 // get all orders - admin
 exports.getAllOrders = catchAsyncErrors(async (req, res, next) => {
     const querySet = new QueryHandler(
-        Order.find().populate("user", "name email"),
+        Order.find().populate("user", "name email").populate("address", "address state city country zipCode"),
         req.query
     ).resolve();
     const orders = await querySet.query
